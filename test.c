@@ -3,7 +3,7 @@
 #include <openssl/err.h>
 #include <stdlib.h>
 #include <string.h>
-#define KEYLEN 24
+#define KEYLEN 16
 
 char* substring(char* target, char* string, int start, int end) {
     int j = 0;
@@ -66,38 +66,38 @@ void handleErrors(void)
 //     return ciphertext_len;
 // }
 
-int encrypt(char * plaintext,char* ciphertext, char* key, char* iv) {
+// int encrypt(char * plaintext,char* ciphertext, char* key, char* iv) {
     
-    EVP_CIPHER_CTX* ctx;
-    if(!(ctx=EVP_CIPHER_CTX_new())) {
-        ERR_print_errors_fp(stderr);
-        abort();    
-    }
+//     EVP_CIPHER_CTX* ctx;
+//     if(!(ctx=EVP_CIPHER_CTX_new())) {
+//         ERR_print_errors_fp(stderr);
+//         abort();    
+//     }
 
-    if(EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
+//     if(EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();
+//     }
 
-    int cipherlen;
+//     int cipherlen;
 
-    if(EVP_EncryptUpdate(ctx, ciphertext, &cipherlen, plaintext, strlen(plaintext))!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
+//     if(EVP_EncryptUpdate(ctx, ciphertext, &cipherlen, plaintext, strlen(plaintext))!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();
+//     }
 
-    int len;
+//     int len;
 
-    if(EVP_EncryptFinal_ex(ctx, ciphertext + cipherlen, &len)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();   
-    }
-    cipherlen += len;
+//     if(EVP_EncryptFinal_ex(ctx, ciphertext + cipherlen, &len)!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();   
+//     }
+//     cipherlen += len;
 
-    EVP_CIPHER_CTX_free(ctx);
+//     EVP_CIPHER_CTX_free(ctx);
 
-    return cipherlen;
-}
+//     return cipherlen;
+// }
 
 // int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
 //             unsigned char *iv, unsigned char *plaintext)
@@ -144,101 +144,204 @@ int encrypt(char * plaintext,char* ciphertext, char* key, char* iv) {
 //     return plaintext_len;
 // }
 
-int decrypt(char* ciphertext, int cipherlen, char* plaintext, char* key, char* iv) {
+// int decrypt(char* ciphertext, int cipherlen, char* plaintext, char* key, char* iv) {
 
+//     EVP_CIPHER_CTX *ctx;
+//     if(!(ctx=EVP_CIPHER_CTX_new())) {
+//         ERR_print_errors_fp(stderr);
+//         abort();    
+//     }
+
+//     if(EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();
+//     }
+
+//     int plaintextlen;
+
+//     if(EVP_DecryptUpdate(ctx, plaintext, &plaintextlen, ciphertext, cipherlen)!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();
+//     }
+
+//     printf("!!!%d\n",plaintextlen);
+
+//     int len;
+
+//     if(EVP_DecryptFinal_ex(ctx, plaintext + plaintextlen, &len)!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();
+//     }
+//     plaintextlen += len;
+
+//     EVP_CIPHER_CTX_free(ctx);
+    
+//     return plaintextlen;
+// }
+
+// int decrypt2(char* ciphertext, int cipherlen, char* plaintext, char* key, char* iv) {
+    
+//     int padlen;
+//     int plaintextlen=0;
+//     EVP_CIPHER_CTX *ctx;
+    
+//     if(!(ctx=EVP_CIPHER_CTX_new())) {
+//         ERR_print_errors_fp(stderr);
+//         abort();    
+//     }
+
+//     if(EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();
+//     }
+
+    
+//     if(EVP_DecryptUpdate(ctx, plaintext+plaintextlen, &padlen, ciphertext, cipherlen)!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();
+//     }
+//     plaintextlen+=padlen;
+
+
+//     printf("plaintextlen : %d\n",plaintextlen);
+//     printf("plaintext : %s\n",plaintext);
+    
+//     if(EVP_DecryptFinal_ex(ctx, plaintext + plaintextlen, &padlen)!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();
+//     }
+//     plaintextlen+=padlen;
+    
+//     EVP_CIPHER_CTX_free(ctx);
+    
+//     return plaintextlen;
+// }
+
+// int EVPCipher(char* in, int inlen, char* out, char* key, char* iv, int encflag) {
+//     int len;
+//     int outlen=0;
+//     EVP_CIPHER_CTX *ctx;
+    
+//     if(!(ctx=EVP_CIPHER_CTX_new())) {
+//         ERR_print_errors_fp(stderr);
+//         abort();    
+//     }
+
+//     if(EVP_CipherInit_ex(ctx,EVP_aes_256_cbc(),NULL,key,iv,encflag)!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();
+//     }
+
+//     if(EVP_CipherUpdate(ctx,out,&len,in,inlen)!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();
+//     }
+//     outlen = len;
+
+//     if(EVP_CipherFinal_ex(ctx,out+outlen,&len)!=1) {
+//         ERR_print_errors_fp(stderr);
+//         abort();
+//     }
+//     outlen+=len;
+
+//     EVP_CIPHER_CTX_free(ctx);
+    
+//     return outlen;
+// }
+
+
+int do_crypt(FILE *in, FILE *out, char* key, char* iv, int do_encrypt)
+{
+    /* Allow enough space in output buffer for additional block */
+    unsigned char inbuf[1024], outbuf[1024 + EVP_CIPHER_block_size(EVP_aes_128_cbc())];
+    int inlen, outlen;
     EVP_CIPHER_CTX *ctx;
-    if(!(ctx=EVP_CIPHER_CTX_new())) {
-        ERR_print_errors_fp(stderr);
-        abort();    
-    }
+    
 
-    if(EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)!=1) {
-        ERR_print_errors_fp(stderr);
+    /* Don't set key or IV right away; we want to check lengths */
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_CipherInit_ex(ctx, EVP_aes_128_cbc(), NULL, NULL, NULL, do_encrypt);
+    OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 16);
+    OPENSSL_assert(EVP_CIPHER_CTX_iv_length(ctx) == 16);
+
+    /* Now we can set key and IV */
+    EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, do_encrypt);
+
+    while(1)
+    {
+        inlen = fread(inbuf, 1, 1024, in);
+        if(inlen <=0) break;
+        if(!EVP_CipherUpdate(ctx, outbuf, &outlen, inbuf, inlen))
+        {
+            /* Error */
+            EVP_CIPHER_CTX_free(ctx);
+            abort();
+        }
+        fwrite(outbuf, 1, outlen, out);
+    }
+    if(!EVP_CipherFinal_ex(ctx, outbuf, &outlen))
+    {
+        /* Error */
+        EVP_CIPHER_CTX_free(ctx);
         abort();
     }
-
-    int plaintextlen;
-
-    if(EVP_DecryptUpdate(ctx, plaintext, &plaintextlen, ciphertext, cipherlen)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-
-    int len;
-
-    if(EVP_DecryptFinal_ex(ctx, plaintext + plaintextlen, &len)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-    plaintextlen += len;
+    fwrite(outbuf, 1, outlen, out);
 
     EVP_CIPHER_CTX_free(ctx);
-    
-    return plaintextlen;
+    return 1;
 }
+
 
 int main(int argc, char const *argv[])
 {
     char pass[] = "ArXEtYg2JEVN25dO/MeXIm9033/47P.aARi74z7Ftv1k7Nek5TGwzNaZbtTF5aLyOjoso4jg3UKs.lPlXAdg1.";
     char salt[] = "IHWXhp1J";
 
-    char* out = (char*)malloc(sizeof(char)*KEYLEN);
-    PKCS5_PBKDF2_HMAC_SHA1(pass,strlen(pass),salt,strlen(salt),1000,KEYLEN,out);
+    // char* out = (char*)malloc(sizeof(char)*KEYLEN);
+    // PKCS5_PBKDF2_HMAC_SHA1(pass,strlen(pass),salt,strlen(salt),1000,KEYLEN,out);
     // for(int i=0;i<KEYLEN;i++) { printf("%02x", out[i]); } printf("\n");
 
-    char*key = (char*)malloc(0);
-    substring(key,out,0,16);
-    char* iv = (char*)malloc(0);
-    substring(iv,out,16,24);
+    char*key = (char*)malloc(sizeof(char)*17);
+    // substring(key,out,0,8);
+    char* iv = (char*)malloc(sizeof(char)*17);
+    // substring(iv,out,8,16);
+
+    EVP_BytesToKey(EVP_aes_128_cbc(),EVP_sha1(),salt,pass,strlen(pass),1000,key,iv);
 
     for(int i=0;i<16;i++) { printf("%02x", key[i]); } printf("\n");
-    for(int i=0;i<8;i++) { printf("%02x", iv[i]); } printf("\n");
+    for(int i=0;i<16;i++) { printf("%02x", iv[i]); } printf("\n");
 
     printf("YES\n");
-    /*
-     * Set up the key and iv. Do I need to say to not hard code these in a
-     * real application? :-)
-     */
-
-    /* A 256 bit key */
-    // unsigned char key[] = "01234567890123456789012345678901";
-
-    /* A 128 bit IV */
-    // unsigned char iv[] = "0123456789012345";
-
-    /* Message to be encrypted */
+    
     unsigned char plaintext[] =
-        "The quick brown fox jumps over the lazy dog";
+        "The fread() function in C++ reads the block of data from stream. This function first, reads count number of objects, each one with a size of size bytes from the given input stream. The total amount of bytes read, if successful is ( size*count ). According to the no. of characters read, the indicator file position is incremented. If the objects read are not trivially copy-able, then the behavior is undefined and if the value of size or count is equal to zero, then this program will simply return 0.1010101010";
+    
+    printf("%ld\n",strlen(plaintext));
+    // unsigned char ciphertext[1000];
 
-    /*
-     * Buffer for ciphertext. Ensure the buffer is long enough for the
-     * ciphertext which may be longer than the plaintext, depending on the
-     * algorithm and mode.
-     */
-    unsigned char ciphertext[128];
+    
+    // unsigned char decryptedtext[1000];
 
-    /* Buffer for the decrypted text */
-    unsigned char decryptedtext[128];
+    // int decryptedtext_len, ciphertext_len;
 
-    int decryptedtext_len, ciphertext_len;
+    
+    // ciphertext_len = EVPCipher(plaintext,strlen(plaintext),ciphertext,key,iv,1);
 
-    /* Encrypt the plaintext */
-    ciphertext_len = encrypt (plaintext, ciphertext, key, iv);
+    // printf("%d\n",ciphertext_len);
+    // /* Do something useful with the ciphertext here */
+    // printf("Ciphertext is:\n");
+    // // printf("%s\n",ciphertext);
+    // BIO_dump_fp (stdout, (const char *)ciphertext, ciphertext_len);
 
-    /* Do something useful with the ciphertext here */
-    printf("Ciphertext is:\n");
-    // printf("%s\n",ciphertext);
-    BIO_dump_fp (stdout, (const char *)ciphertext, ciphertext_len);
+    // /* Decrypt the ciphertext */
+    // decryptedtext_len = EVPCipher(ciphertext,ciphertext_len,decryptedtext,key,iv,0);
 
-    /* Decrypt the ciphertext */
-    decryptedtext_len = decrypt(ciphertext, ciphertext_len, decryptedtext, key, iv);
+    // /* Add a NULL terminator. We are expecting printable text */
+    // decryptedtext[decryptedtext_len] = '\0';
 
-    /* Add a NULL terminator. We are expecting printable text */
-    decryptedtext[decryptedtext_len] = '\0';
-
-    /* Show the decrypted text */
-    printf("Decrypted text is:\n");
-    printf("%s\n", decryptedtext);
+    // /* Show the decrypted text */
+    // printf("Decrypted text is:\n");
+    // printf("%s\n", decryptedtext);
 
     return 0;
 }   

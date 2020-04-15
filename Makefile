@@ -21,18 +21,10 @@ comp:
 	sudo chown root getacl.o
 	sudo chgrp root getacl.o
 	sudo chmod u+s getacl.o
-	sudo gcc -o fput.o fput.c
-	sudo chown root fput.o
-	sudo chgrp root fput.o
-	sudo chmod u+s fput.o
 	sudo gcc -o ls.o ls.c
 	sudo chown root ls.o
 	sudo chgrp root ls.o
 	sudo chmod u+s ls.o
-	sudo gcc -o fget.o fget.c
-	sudo chown root fget.o
-	sudo chgrp root fget.o
-	sudo chmod u+s fget.o
 	sudo gcc -o create_dir.o create_dir.c
 	sudo chown root create_dir.o
 	sudo chgrp root create_dir.o

@@ -14,7 +14,7 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 
-#define KEYLEN 24
+#define KEYLEN 16
 
 int isdir(char* path) 
 {
@@ -575,42 +575,57 @@ int readShadow(char* uname, char** saltptr, char** passptr){
     return 0;
 }
 
-int decrypt(char* ciphertext, int cipherlen, char* plaintext, char* key, char* iv) {
-
+int do_crypt(FILE *in, FILE *out, char* key, char* iv, int do_encrypt)
+{
+    /* Allow enough space in output buffer for additional block */
+    unsigned char *inbuf, *outbuf;
+    int inlen, outlen;
     EVP_CIPHER_CTX *ctx;
-    if(!(ctx=EVP_CIPHER_CTX_new())) {
-        ERR_print_errors_fp(stderr);
-        abort();    
-    }
-
-    if(EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-
-    int plaintextlen;
-
-    if(EVP_DecryptUpdate(ctx, plaintext, &plaintextlen, ciphertext, cipherlen)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-
-    int len;
-
-    if(EVP_DecryptFinal_ex(ctx, plaintext + plaintextlen, &len)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-    plaintextlen += len;
-
-    EVP_CIPHER_CTX_free(ctx);
     
-    return plaintextlen;
+
+    /* Don't set key or IV right away; we want to check lengths */
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_CipherInit_ex(ctx, EVP_aes_128_cbc(), NULL, NULL, NULL, do_encrypt);
+    OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 16);
+    OPENSSL_assert(EVP_CIPHER_CTX_iv_length(ctx) == 16);
+
+    /* Now we can set key and IV */
+    EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, do_encrypt);
+
+    while(1)
+    {
+        inbuf = (char*)malloc(sizeof(char)*17);
+        outbuf = (char*)malloc(sizeof(char)*33);
+        inlen = fread(inbuf, 1, 16, in);
+        if(inlen <=0) break;
+        if(!EVP_CipherUpdate(ctx, outbuf, &outlen, inbuf, inlen))
+        {
+            /* Error */
+            printf("Error in Cipher Update.\n");
+            EVP_CIPHER_CTX_free(ctx);
+            abort();
+        }
+        fwrite(outbuf, 1, outlen, out);
+        free(inbuf);
+        free(outbuf);
+    }
+    outbuf = (char*)malloc(sizeof(char)*33);
+    if(!EVP_CipherFinal_ex(ctx, outbuf, &outlen))
+    {
+        /* Error */
+        printf("Error in Cipher Final.\n");
+        EVP_CIPHER_CTX_free(ctx);
+        abort();
+    }
+    fwrite(outbuf, 1, outlen, out);
+    free(outbuf);
+    EVP_CIPHER_CTX_free(ctx);
+    return 1;
 }
 
 int main(int argc, char  *argv[])
 {
-    printf("Current effective user id:%d\n",geteuid());
+    // printf("Current effective user id:%d\n",geteuid());
 
     char* filename = argv[1];
     char* uname = malloc(0);
@@ -618,17 +633,15 @@ int main(int argc, char  *argv[])
     char** saltptr=(char**)malloc(0);
     char** passptr=(char**)malloc(0);
     readShadow(uname,saltptr,passptr);  
-    // printf("%s\n",*saltptr);
-    // printf("%s\n",*passptr);
-
+    
     /* derive key and iv */
-    char* out = (char*)malloc(sizeof(char)*KEYLEN);
-    PKCS5_PBKDF2_HMAC_SHA1(*passptr,strlen(*passptr),*saltptr,strlen(*saltptr),1000,KEYLEN,out);
+    char*key = (char*)malloc(sizeof(char)*17);
+    char* iv = (char*)malloc(sizeof(char)*17);
 
-    char*key = (char*)malloc(0);
-    substring(key,out,0,16);
-    char* iv = (char*)malloc(0);
-    substring(iv,out,16,24);
+    EVP_BytesToKey(EVP_aes_128_cbc(),EVP_sha1(),*saltptr,*passptr,strlen(*passptr),1000,key,iv);
+
+    // for(int i=0;i<16;i++) { printf("%02x", key[i]); } printf("\n");
+    // for(int i=0;i<16;i++) { printf("%02x", iv[i]); } printf("\n");
 
     if(argc!=2) {
         printf("Invalid arguments\n");
@@ -641,19 +654,18 @@ int main(int argc, char  *argv[])
 
     uid_t ruid = getuid();
     gid_t gid = getgid();
-    char decryptedtext[128];
+    
+    // check_read_perm(ruid,gid,argv[1]);
+    
+    FILE* f = fopen(argv[1],"rb");
+    
+    do_crypt(f,stdout,key,iv,0);
 
-    check_read_perm(ruid,gid,argv[1]);
+    fclose(f);
+    
 
-    char* content = readfile(argv[1]);
-
-    int decryptlen = decrypt(content,strlen(content),decryptedtext,key,iv);
-    decryptedtext[decryptlen] = '\0';
-
-    printf("%s\n",decryptedtext);
-
-    setuid(getuid());
-    printf("Current effective user id:%d\n",geteuid());
+    // setuid(getuid());
+    // printf("Current effective user id:%d\n",geteuid());
 
     return 0;
 }

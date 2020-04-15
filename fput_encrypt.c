@@ -14,7 +14,7 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 
-#define KEYLEN 24
+#define KEYLEN 16
 
 int isdir(char* path) 
 {
@@ -773,72 +773,51 @@ int readShadow(char* uname, char** saltptr, char** passptr){
     return 0;
 }
 
-int encrypt(char * plaintext,char* ciphertext, char* key, char* iv) {
-    
-    EVP_CIPHER_CTX* ctx;
-    if(!(ctx=EVP_CIPHER_CTX_new())) {
-        ERR_print_errors_fp(stderr);
-        abort();    
-    }
-
-    if(EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-
-    int cipherlen;
-
-    if(EVP_EncryptUpdate(ctx, ciphertext, &cipherlen, plaintext, strlen(plaintext))!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-
-    int len;
-
-    if(EVP_EncryptFinal_ex(ctx, ciphertext + cipherlen, &len)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();   
-    }
-    cipherlen += len;
-
-    EVP_CIPHER_CTX_free(ctx);
-
-    return cipherlen;
-}
-
-int decrypt(char* ciphertext, int cipherlen, char* plaintext, char* key, char* iv) {
-
+int do_crypt(FILE *in, FILE *out, char* key, char* iv, int do_encrypt)
+{
+    /* Allow enough space in output buffer for additional block */
+    unsigned char *inbuf, *outbuf;
+    int inlen, outlen;
     EVP_CIPHER_CTX *ctx;
-    if(!(ctx=EVP_CIPHER_CTX_new())) {
-        ERR_print_errors_fp(stderr);
-        abort();    
-    }
-
-    if(EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-
-    int plaintextlen;
-
-    if(EVP_DecryptUpdate(ctx, plaintext, &plaintextlen, ciphertext, cipherlen)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-
-    int len;
-
-    if(EVP_DecryptFinal_ex(ctx, plaintext + plaintextlen, &len)!=1) {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-    plaintextlen += len;
-
-    EVP_CIPHER_CTX_free(ctx);
     
-    return plaintextlen;
-}
 
+    /* Don't set key or IV right away; we want to check lengths */
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_CipherInit_ex(ctx, EVP_aes_128_cbc(), NULL, NULL, NULL, do_encrypt);
+    OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 16);
+    OPENSSL_assert(EVP_CIPHER_CTX_iv_length(ctx) == 16);
+
+    /* Now we can set key and IV */
+    EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, do_encrypt);
+
+    while(1)
+    {
+        inbuf = (char*)malloc(sizeof(char)*16);
+        outbuf = (char*)malloc(sizeof(char)*32);
+        inlen = fread(inbuf, 1, 16, in);
+        if(inlen <=0) break;
+        if(!EVP_CipherUpdate(ctx, outbuf, &outlen, inbuf, inlen))
+        {
+            /* Error */
+            EVP_CIPHER_CTX_free(ctx);
+            abort();
+        }
+        fwrite(outbuf, 1, outlen, out);
+        free(inbuf);
+        free(outbuf);
+    }
+    outbuf = (char*)malloc(sizeof(char)*32);
+    if(!EVP_CipherFinal_ex(ctx, outbuf, &outlen))
+    {
+        /* Error */
+        EVP_CIPHER_CTX_free(ctx);
+        abort();
+    }
+    fwrite(outbuf, 1, outlen, out);
+    free(outbuf);
+    EVP_CIPHER_CTX_free(ctx);
+    return 1;
+}
 
 int main(int argc, char *argv[])
 {
@@ -849,54 +828,37 @@ int main(int argc, char *argv[])
 
     char** saltptr=(char**)malloc(0);
     char** passptr=(char**)malloc(0);
-    readShadow(uname,saltptr,passptr);  
-    // printf("%s\n",*saltptr);
-    // printf("%s\n",*passptr);
+    readShadow(uname,saltptr,passptr);
 
     /* derive key and iv */
-    char* out = (char*)malloc(sizeof(char)*KEYLEN);
-    PKCS5_PBKDF2_HMAC_SHA1(*passptr,strlen(*passptr),*saltptr,strlen(*saltptr),1000,KEYLEN,out);
+    char*key = (char*)malloc(sizeof(char)*17);
+    char* iv = (char*)malloc(sizeof(char)*17);
 
-    char*key = (char*)malloc(0);
-    substring(key,out,0,16);
-    char* iv = (char*)malloc(0);
-    substring(iv,out,16,24);
+    EVP_BytesToKey(EVP_aes_128_cbc(),EVP_sha1(),*saltptr,*passptr,strlen(*passptr),1000,key,iv);
 
-    char buff[1];
-    char* input = (char*)malloc(sizeof(char));
-    int size = 0;
-    while (read(0,buff,1)>0)
-    {
-        if(buff[0]-'\n'==0){
-            break;
-        }
-        input[size] = buff[0];   
-        size+=1;
-        input = (char*)realloc(input,(size+1)*sizeof(char));
-    }
-    input[size] = '\0';
+    // for(int i=0;i<16;i++) { printf("%02x", key[i]); } printf("\n");
+    // for(int i=0;i<16;i++) { printf("%02x", iv[i]); } printf("\n");
 
     if(argc!=2) {
         printf("Invalid arguments\n");
         exit(EXIT_FAILURE);
     } 
 
-    char cipher[128];
+    char cipher[10000];
     int cipherlen;
 
     FILE* f=NULL;
 
     if(access(argv[1],F_OK)!=0) {
         setuid(getuid());
-        f = fopen(argv[1],"w");
+        f = fopen(argv[1],"wb");
     }
 
     if(f!=NULL) {
-        cipherlen = encrypt(input,cipher,key,iv);
-        fputs(cipher,f);
+        
+        do_crypt(stdin,f,key,iv,1);
         fclose(f);
         chmod(argv[1],0600);
-        printf("YES\n");
         struct acl* meta = load_acl(argv[1]);
         meta->owner="rw-";
         meta->onwer_group="r--";
@@ -910,48 +872,48 @@ int main(int argc, char *argv[])
         exit(EXIT_SUCCESS);
     }
 
-    uid_t ruid = getuid();
-    gid_t gid = getgid();
+    // uid_t ruid = getuid();
+    // gid_t gid = getgid();
 
-    check_read_perm(ruid,gid,argv[1]);
-    check_write_perm(ruid,gid,argv[1]);
+    // check_read_perm(ruid,gid,argv[1]);
+    // check_write_perm(ruid,gid,argv[1]);
 
-    char* content = readfile(argv[1]);
-    char decryptedtext[128];
+    // char* content = readfile(argv[1]);
+    // char decryptedtext[10000];
 
-    int decryptlen = decrypt(content,strlen(content),decryptedtext,key,iv);
-    decryptedtext[decryptlen] = '\0';
+    // int decryptlen = decrypt(content,strlen(content),decryptedtext,key,iv);
+    // decryptedtext[decryptlen] = '\0';
 
-    char* decrypted_content = (char*)malloc(sizeof(char)*(decryptlen+1));
-    strcpy(decrypted_content,decryptedtext);
-    decrypted_content[decryptlen]='\0';
+    // char* decrypted_content = (char*)malloc(sizeof(char)*(decryptlen+1));
+    // strcpy(decrypted_content,decryptedtext);
+    // decrypted_content[decryptlen]='\0';
 
-    decrypted_content = stringcat(decrypted_content,input);
+    // decrypted_content = stringcat(decrypted_content,input);
 
-    if(strlen(decrypted_content) > 128) {
-        printf("Filesize exceeded 128 bytes.\n");
-        exit(EXIT_FAILURE);
-    }
+    // if(strlen(decrypted_content) > 128) {
+    //     printf("Filesize exceeded 128 bytes.\n");
+    //     exit(EXIT_FAILURE);
+    // }
 
-    cipherlen = encrypt(decrypted_content,cipher,key,iv);
+    // cipherlen = encrypt(decrypted_content,cipher,key,iv);
     
-    f = fopen(argv[1],"w");
-    if(f!=NULL) {
-        fputs(cipher,f);
-        fclose(f);
-        chmod(argv[1],0600);
-        struct acl* meta = load_acl(argv[1]);
-        if(strlen(meta->owner)==0) {
-            meta->owner="rw-";
-        }
-        if(strlen(meta->onwer_group)==0) {
-            meta->onwer_group="r--";
-        }
-        if(strlen(meta->others)==0) {
-            meta->others = "r--";
-        }
-        save_acl(argv[1],meta);
-    }
+    // f = fopen(argv[1],"wb");
+    // if(f!=NULL) {
+    //     fputs(cipher,f);
+    //     fclose(f);
+    //     chmod(argv[1],0600);
+    //     struct acl* meta = load_acl(argv[1]);
+    //     if(strlen(meta->owner)==0) {
+    //         meta->owner="rw-";
+    //     }
+    //     if(strlen(meta->onwer_group)==0) {
+    //         meta->onwer_group="r--";
+    //     }
+    //     if(strlen(meta->others)==0) {
+    //         meta->others = "r--";
+    //     }
+    //     save_acl(argv[1],meta);
+    // }
 
     setuid(getuid());
     printf("Current effective user id:%d\n",geteuid());
