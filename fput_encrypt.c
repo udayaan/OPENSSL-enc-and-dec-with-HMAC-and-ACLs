@@ -14,7 +14,6 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 
-#define KEYLEN 16
 
 int isdir(char* path) 
 {

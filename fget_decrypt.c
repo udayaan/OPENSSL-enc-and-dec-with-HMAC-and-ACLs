@@ -14,7 +14,6 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 
-#define KEYLEN 16
 
 int isdir(char* path) 
 {
@@ -357,7 +356,7 @@ int  checknameduser_or_grop_read_perm(char* username, struct acl* meta, int flag
 void check_read_perm(uid_t ruid, gid_t gid, char* path) {
 
     struct acl* direc = load_acl(path);
-    
+
     struct passwd* user; 
     if((user=getpwuid(ruid))==NULL) {
         printf("%s\n",strerror(errno));

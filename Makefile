@@ -7,6 +7,14 @@ init:
 	sudo chown root fget_decrypt.o
 	sudo chgrp root fget_decrypt.o
 	sudo chmod u+s fget_decrypt.o
+	gcc -o fsign.o fsign.c -lcrypto
+	sudo chown root fsign.o
+	sudo chgrp root fsign.o
+	sudo chmod u+s fsign.o
+	gcc -o fverify.o fverify.c -lcrypto
+	sudo chown root fverify.o
+	sudo chgrp root fverify.o
+	sudo chmod u+s fverify.o
 
 comp:
 	sudo gcc -o do_exec.o do_exec.c
