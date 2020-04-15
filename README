@@ -1,2 +1,5 @@
-Assumptions
-1. fixed length of text in one file  (only 128 characters)
+Encrytion : ./fput_encrypt.o ~/Desktop/SE_Proj4/file < input
+Decryption: ./fget_decrypt.o ~/Desktop/SE_Proj4/file
+
+Assumptions:
+1. No append option in fput_encrypt.

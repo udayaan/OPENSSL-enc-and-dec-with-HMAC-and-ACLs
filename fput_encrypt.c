@@ -199,6 +199,7 @@ struct acl *load_acl(char *path)
 
 void save_acl(char* path, struct acl* meta) {
 
+    // printf("owner : %s\n",meta->owner);
     if (setxattr(path, OWNER, meta->owner, strlen(meta->owner), 0) != 0)
     {
         printf("%s\n", strerror(errno));
@@ -632,6 +633,12 @@ void copy_default(char* path, struct acl* meta)
         return;
     }
     struct acl* parentacl = load_acl(prevdir);
+
+    if(parentacl->owner[0]-'r'!=0 && parentacl->owner[0]-'-'!=0) {
+        /* acls not present in parent dir */
+        return;
+    }
+
     if(strlen(parentacl->default_owner)!=0) {
         meta->owner = parentacl->default_owner;
     }
@@ -863,6 +870,9 @@ int main(int argc, char *argv[])
         meta->owner="rw-";
         meta->onwer_group="r--";
         meta->others = "r--";
+        meta->mask="";
+        meta->named_groups="";
+        meta->named_users="";
         copy_default(argv[1],meta);
         save_acl(argv[1],meta);
 
@@ -871,49 +881,6 @@ int main(int argc, char *argv[])
 
         exit(EXIT_SUCCESS);
     }
-
-    // uid_t ruid = getuid();
-    // gid_t gid = getgid();
-
-    // check_read_perm(ruid,gid,argv[1]);
-    // check_write_perm(ruid,gid,argv[1]);
-
-    // char* content = readfile(argv[1]);
-    // char decryptedtext[10000];
-
-    // int decryptlen = decrypt(content,strlen(content),decryptedtext,key,iv);
-    // decryptedtext[decryptlen] = '\0';
-
-    // char* decrypted_content = (char*)malloc(sizeof(char)*(decryptlen+1));
-    // strcpy(decrypted_content,decryptedtext);
-    // decrypted_content[decryptlen]='\0';
-
-    // decrypted_content = stringcat(decrypted_content,input);
-
-    // if(strlen(decrypted_content) > 128) {
-    //     printf("Filesize exceeded 128 bytes.\n");
-    //     exit(EXIT_FAILURE);
-    // }
-
-    // cipherlen = encrypt(decrypted_content,cipher,key,iv);
-    
-    // f = fopen(argv[1],"wb");
-    // if(f!=NULL) {
-    //     fputs(cipher,f);
-    //     fclose(f);
-    //     chmod(argv[1],0600);
-    //     struct acl* meta = load_acl(argv[1]);
-    //     if(strlen(meta->owner)==0) {
-    //         meta->owner="rw-";
-    //     }
-    //     if(strlen(meta->onwer_group)==0) {
-    //         meta->onwer_group="r--";
-    //     }
-    //     if(strlen(meta->others)==0) {
-    //         meta->others = "r--";
-    //     }
-    //     save_acl(argv[1],meta);
-    // }
 
     setuid(getuid());
     printf("Current effective user id:%d\n",geteuid());

@@ -357,7 +357,7 @@ int  checknameduser_or_grop_read_perm(char* username, struct acl* meta, int flag
 void check_read_perm(uid_t ruid, gid_t gid, char* path) {
 
     struct acl* direc = load_acl(path);
-
+    
     struct passwd* user; 
     if((user=getpwuid(ruid))==NULL) {
         printf("%s\n",strerror(errno));
@@ -655,7 +655,7 @@ int main(int argc, char  *argv[])
     uid_t ruid = getuid();
     gid_t gid = getgid();
     
-    // check_read_perm(ruid,gid,argv[1]);
+    check_read_perm(ruid,gid,argv[1]);
     
     FILE* f = fopen(argv[1],"rb");
     

@@ -466,6 +466,12 @@ void copy_default(char* path, struct acl* meta)
         return;
     }
     struct acl* parentacl = load_acl(prevdir);
+
+    if(parentacl->owner[0]-'r'!=0 && parentacl->owner[0]-'-'!=0) {
+        /* acls not present in parent dir */
+        return;
+    }
+
     if(strlen(parentacl->default_owner)!=0) {
         meta->owner = parentacl->default_owner;
     }
