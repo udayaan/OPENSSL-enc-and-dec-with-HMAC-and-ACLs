@@ -825,6 +825,28 @@ int do_crypt(FILE *in, FILE *out, char* key, char* iv, int do_encrypt)
     return 1;
 }
 
+void create_sign(char* argv[]) {
+    char* args[5];
+    args[0] = "./fsign.o";
+    args[1] = argv[1];
+    args[2] = argv[2];
+    args[3] = argv[3];
+    args[4] = '\0';
+
+    int exit_status;
+    pid_t p = fork();
+    if(p==0) {
+
+        if(execv(args[0],args)!=0) {
+            exit(EXIT_FAILURE);
+        }
+
+    }
+    waitpid(p,&exit_status,0);
+
+    return;
+}
+
 int main(int argc, char *argv[])
 {
     printf("Current effective user id:%d\n",geteuid());
@@ -874,6 +896,9 @@ int main(int argc, char *argv[])
         meta->named_users="";
         copy_default(argv[1],meta);
         save_acl(argv[1],meta);
+        
+        fseek(stdin,0,SEEK_SET);
+        create_sign(argv);
 
         setuid(getuid());
         printf("Current effective user id:%d\n",geteuid());

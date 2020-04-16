@@ -1,5 +1,12 @@
 Encrytion : ./fput_encrypt.o ~/Desktop/SE_Proj4/file < input
 Decryption: ./fget_decrypt.o ~/Desktop/SE_Proj4/file
 
+Decrypted output in file.dec
+fget_decrypt prints HMAC signature verification status.
+If output is 0, then signature is matched.
+If output is 1, then signature is unmatched.  
+
 Assumptions:
 1. No append option in fput_encrypt.
+2. Program Files need to be executed from the folder that contains 
+all the programs.

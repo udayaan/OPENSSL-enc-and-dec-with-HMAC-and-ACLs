@@ -622,6 +622,65 @@ int do_crypt(FILE *in, FILE *out, char* key, char* iv, int do_encrypt)
     return 1;
 }
 
+void verify(char*argv[], FILE* fout) {
+
+    char* args[3];
+    args[0] = "./fverify.o";
+    args[1] = argv[1];
+    args[2] = '\0';
+
+    FILE* f = stdout;
+
+    int fd1[2];
+    int fd2[2];
+    
+    if(pipe(fd1)!=0){
+        printf("%s\n",strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    if(pipe(fd2)!=0){
+        printf("%s\n",strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    int exit_status;
+    pid_t p=fork();
+    if(p==0) {
+
+        close(0);
+        dup(fd1[0]);
+        close(1);
+        dup(fd2[1]);
+        close(fd2[0]);
+        close(fd1[1]);
+
+        if((exit_status=execv(args[0],args))!=0) {
+            exit(EXIT_FAILURE);
+        }
+
+    }
+
+    while (1)
+    {
+        char buf[1];
+        int len = fread(buf,1,1,fout);
+        if(len<=0) break;
+        write(fd1[1],buf,1);
+    }
+    close(fd1[1]);
+
+    waitpid(p,&exit_status,0);
+    close(fd2[1]);
+
+    while(1) {
+        char buf[1];
+        int len = read(fd2[0],buf,1);
+        if(len<=0) break;
+        printf("%s",buf);
+    }
+    
+}
+
 int main(int argc, char  *argv[])
 {
     // printf("Current effective user id:%d\n",geteuid());
@@ -656,13 +715,24 @@ int main(int argc, char  *argv[])
     
     check_read_perm(ruid,gid,argv[1]);
     
-    FILE* f = fopen(argv[1],"rb");
-    
-    do_crypt(f,stdout,key,iv,0);
+    char* fileout = (char*)malloc((strlen(argv[1])+1)*sizeof(char));
+    strcpy(fileout,argv[1]);
+    fileout[strlen(argv[1])]='\0';
 
+    strcat(fileout,".dec");
+
+    FILE* f = fopen(argv[1],"rb");
+    FILE* fout = fopen(fileout,"w");
+    
+    do_crypt(f,fout,key,iv,0);
+    fclose(fout);
+    
+    fout = fopen(fileout,"r");
+    verify(argv, fout);
+
+    fclose(fout);
     fclose(f);
     
-
     // setuid(getuid());
     // printf("Current effective user id:%d\n",geteuid());
 
