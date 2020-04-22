@@ -381,6 +381,7 @@ int main(int argc, char *argv[])
     meta->named_groups="";
     meta->named_users="";
     save_acl(argv[1],meta);
+    chown(argv[1],getuid(),getgid());
 
     exit(EXIT_SUCCESS);
 }

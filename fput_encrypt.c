@@ -896,7 +896,8 @@ int main(int argc, char *argv[])
         meta->named_users="";
         copy_default(argv[1],meta);
         save_acl(argv[1],meta);
-        
+        chown(argv[1],getuid(),getgid());
+    
         fseek(stdin,0,SEEK_SET);
         create_sign(argv);
 
