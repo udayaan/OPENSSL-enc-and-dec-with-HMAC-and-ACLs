@@ -889,8 +889,8 @@ int main(int argc, char *argv[])
         chmod(argv[1],0600);
         struct acl* meta = load_acl(argv[1]);
         meta->owner="rw-";
-        meta->onwer_group="r--";
-        meta->others = "r--";
+        meta->onwer_group="---";
+        meta->others = "---";
         meta->mask="";
         meta->named_groups="";
         meta->named_users="";

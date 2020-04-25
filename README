@@ -1,3 +1,36 @@
+Name: Udayaan Nath
+Roll No.: 2017119
+PART 1
+##################################################################
+
+Description:
+
+There are four programs for this part:
+
+fput_encrypt.c :
+Uses Openssl EVP encrypt functions to encrypt the file. The encrytion 
+algorithm used is AES128 CBC. The key derived from the hashed password
+of the onwer in the etc/shadow file. The file content is signed by calling
+the fsign.c program internally.
+
+fget_decrypt.c :
+Uses Openssl EVP decrypt functions to decrypt the file. The encrytion 
+algorithm used is AES128 CBC. The key derived from the hashed password
+of the onwer in the etc/shadow file. The output is verified with the 
+HMAC signature by calling the fverify.c program internally. The output is
+stored in <filename>.dec.
+
+fsign.c :
+Uses EVP HMAC fucntions to create a signature and stores the signature in 
+<filename>.sign.
+
+fverify.c :
+Uses the EVP HMAC fucntions to verify the signature. Prints 0 on successful
+verification of the signature.
+
+
+Usage:
+
 Encrytion : ./fput_encrypt.o ~/Desktop/SE_Proj4/file < input
 Decryption: ./fget_decrypt.o ~/Desktop/SE_Proj4/file
 
@@ -6,7 +39,21 @@ fget_decrypt prints HMAC signature verification status.
 If output is 0, then signature is matched.
 If output is 1, then signature is unmatched.  
 
+
 Assumptions:
 1. No append option in fput_encrypt.
 2. Program Files need to be executed from the folder that contains 
 all the programs.
+3. The input needs to be provided through redirection for fput_encrypt.c program.
+It is assumed that the user will delete the plaintext mannually after encrytion is done.
+
+Defense:
+1. The encrypted files and signatures use ACLs. By default only the owner has read and 
+write permissions to these files. The onwer needs to give read permissions mannually to
+other users. So, no other users can decrypt the encrypted files without owner consent.
+
+2. The attacker can modify the encrypted files content. But, while decryption the HMAC 
+signature is verified which will fail if the attacker does so.
+
+3. The attacker cannot use do_exec.c to decrypt files. Even then there is check if the 
+user has read permission to the file. 

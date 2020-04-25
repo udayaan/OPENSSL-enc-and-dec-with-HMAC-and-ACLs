@@ -15,8 +15,6 @@ init:
 	sudo chown root fverify.o
 	sudo chgrp root fverify.o
 	sudo chmod u+s fverify.o
-
-comp:
 	sudo gcc -o do_exec.o do_exec.c
 	sudo chown root do_exec.o
 	sudo chgrp root do_exec.o
